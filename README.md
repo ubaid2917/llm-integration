@@ -1,46 +1,41 @@
-# NestJS Sample Project
+# LLM Integration
 
-A small NestJS application scaffolded with TypeScript.
+NestJS backend for building GenAI applications with Groq and Mem0.
 
 ## Requirements
 
 - Node.js 20 or newer
 - npm
 
-## Getting started
+## Getting Started
 
-```bash
+```powershell
 npm install
 Copy-Item .env.example .env
 npm run start:dev
 ```
 
-`dotenv` loads `.env` when the app starts. Set `PORT` to change the server port,
-put your Groq key in `GROQ_API_KEY`, and set `GROQ_MODEL` to the model ID from
-your Groq API request (the example uses `openai/gpt-oss-120b`). Keep real
-secrets in `.env`; it is excluded from Git.
-Update `.env.example` when adding new required environment variables, but never
-put real secrets in that file.
+Set `GROQ_API_KEY`, `GROQ_MODEL`, and `MEM0_API_KEY` in `.env`.
 
-## Generate text with Groq
+## Reusable AI and memory services
 
-Send a prompt to `POST /generate` (the request uses Groq's OpenAI-compatible
-Chat Completions API):
+`AiService` and `Mem0Service` are provided through global NestJS modules. Inject
+them into feature services rather than creating API clients in each file.
+`Mem0Service` provides user-scoped memory search and conversation storage.
 
-```powershell
-Invoke-RestMethod -Uri http://localhost:3000/generate -Method Post `
-  -ContentType "application/json" -Body '{"prompt":"Write a short greeting"}'
+The chat endpoint is `POST /api/chatbot/chat` and expects a stable user ID:
+
+```json
+{
+  "userId": "user-123",
+  "message": "What kind of food do I like?"
+}
 ```
 
-The response contains the generated text in its `text` property.
+It searches that user's relevant memories, includes them when generating a
+reply, then stores the user message and assistant reply in Mem0. In an
+authenticated application, derive `userId` from the authenticated identity
+rather than trusting an arbitrary ID supplied by the client.
 
-## Endpoints
-
-- `GET /` returns a greeting.
-- `GET /health` returns the application health status.
-
-## Other commands
-
-- `npm run build` compiles the application into `dist/`.
-- `npm start` starts the app with the Nest CLI.
-- `npm run start:prod` runs the compiled app from `dist/`.
+The assistant can also call `search_memory` to look up relevant user memories
+and `add_memory` to save a fact or preference provided by the user.
